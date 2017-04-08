@@ -34,17 +34,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-
-
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.api.GoogleApiClient;
+
+import okhttp3.Request;
+import okhttp3.Response;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
@@ -213,6 +209,9 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             cancel = true;
         }*/
 
+        // check connection si pas de co cancel a false + message d'erreur
+
+
         if (cancel) {
             // There was an error; don't attempt login and focus the first
             // form field with an error.
@@ -371,6 +370,9 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         private final String mEmail;
         private final String mPassword;
 
+        private String tokenKey     = null;
+        private String tokenValue   = null;
+
         UserLoginTask(String email, String password) {
             mEmail = email;
             mPassword = password;
@@ -388,11 +390,35 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             try {
 
                 try {
-                    PostHttp client = new PostHttp();
+                    MyHttp clientHttp = new MyHttp();
 
-                    String jsonResponse = client.sendPost(etnaUrlLogin, registerData);
+                    Request request = clientHttp.post(etnaUrlLogin, registerData);
 
-                    Log.d("JSONRESPONSE : ", jsonResponse);
+                    try ( Response response = clientHttp.client.newCall(request).execute()) {
+
+                        // Ne plus checker la connection inthernet ici
+
+                        if (response.header("Set-Cookie") == null) {
+
+                            System.out.println("bad login / password");
+
+                        } else {
+
+                            String[] cookiesArray = response.header("Set-Cookie").split(";");
+                            String[] cookiesAuth = cookiesArray[0].split("=");
+
+                            this.tokenKey     = cookiesAuth[0];
+                            this.tokenValue   = cookiesAuth[1];
+                        }
+
+                        System.out.println( "Response body => " + response.body().string());
+
+                        Log.d("JSONRESPONSE : ", response.body().toString());
+
+                    } catch (IOException e) {
+
+                        System.out.println(e.toString() + "  ->  Pas de connection internet !");
+                    }
 
                 } catch (IOException e) {
 
