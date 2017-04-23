@@ -142,7 +142,7 @@
         jumboMode="true"
         optimize="true"
         revision="24.0.3"
-        sha1="1b4580afc38138cca04da6b00a7563d9a16ac7af">
+        sha1="57fcafd9e45f0b262b7f37837148cab1f3ce9f8f">
         <dex dex="/Users/badredinebelhadef/AndroidStudioProjects/EtnaApp/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run-bootstrap_d26a9028efa37cc6cd29ad90bf1740092603a693/classes.dex" />
     </item>
     <item
@@ -151,7 +151,7 @@
         jumboMode="true"
         optimize="true"
         revision="24.0.3"
-        sha1="7fc9a0ef1190869ed41431ad81616139015eaf1a">
+        sha1="7bf067be52e5383b732eae92f4c052bbdce537a1">
         <dex dex="/Users/badredinebelhadef/AndroidStudioProjects/EtnaApp/app/build/intermediates/transforms/dex/debug/folders/1000/10/instant-run_bfa038139952a75562d1d2a3b3feae01129b1ef0/classes.dex" />
     </item>
     <item

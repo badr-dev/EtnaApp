@@ -1,11 +1,15 @@
 package com.example.badredinebelhadef.etnaapp;
 
+import android.util.Log;
+
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.security.Key;
 import java.util.List;
 
+import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.Headers;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -38,4 +42,24 @@ public class MyHttp{
 
         return request;
     }
+
+    public String get(String url, String tokenKey, String tokenValue) throws IOException {
+
+        Request request = new Request.Builder()
+                .addHeader("Cookie", tokenKey + "=" +tokenValue)
+                .url(url)
+                .build();
+
+        try ( Response response = client.newCall(request).execute() ) {
+
+            return response.body().string();
+
+        } catch (IOException e) {
+
+            System.out.println(e.toString() + " Error request Http :: Get Method in MyHttp ");
+
+            return " Error request Http :: Get Method in MyHttp ";
+        }
+    }
+
 }

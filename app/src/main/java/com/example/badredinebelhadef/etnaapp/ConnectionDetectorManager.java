@@ -1,4 +1,4 @@
-package com.pecunia.courtage.app.manager;
+package com.example.badredinebelhadef.etnaapp;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
