@@ -24,8 +24,21 @@ import java.io.IOException;
 import okhttp3.Request;
 import okhttp3.Response;
 
+
+
+// Interface callbaack
+interface AsyncResponse {
+    void processFinish(String output);
+}
+
+
 public class HomeActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener {
+        implements NavigationView.OnNavigationItemSelectedListener, AsyncResponse {
+
+
+
+
+
 
     protected TextView UserCompleteName;
 
@@ -75,15 +88,36 @@ public class HomeActivity extends AppCompatActivity
 
         System.out.println( "Url before call Api => " + userBasicInfoUrl);
 
-
         HomeGetHttpTask HomeGetHttpTaskObj = new HomeGetHttpTask("https://prepintra-api.etna-alternance.net/users/belhad_b", tokenKey, tokenValue);
+
+        HomeGetHttpTaskObj.delegate = (AsyncResponse) this;
+
         HomeGetHttpTaskObj.execute();
+
+
+
+
+
 /*        try {
             JSONObject jobject = new JSONObject(response);
         } catch (Exception e) {
             e.printStackTrace();
         }*/
     }
+
+
+    //this override the implemented method from asyncTask
+    @Override
+    public void processFinish(String output){
+        //Here you will receive the result fired from async class
+        //of onPostExecute(result) method.
+
+        System.out.println( "LES POTES A LA POTE A LA PETER => " + output);
+    }
+
+
+
+
 
     @Override
     public void onBackPressed() {
@@ -151,6 +185,8 @@ public class HomeActivity extends AppCompatActivity
         protected String tokenKey = "";
         protected String tokenValue = "";
 
+        public AsyncResponse delegate = null;
+
         HomeGetHttpTask(String urlQuery, String tokenKey, String tokenValue) {
             this.url = urlQuery;
             this.tokenKey = tokenKey;
@@ -171,6 +207,11 @@ public class HomeActivity extends AppCompatActivity
                 e.printStackTrace();
                 return "Error in doInBackground";
             }
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            delegate.processFinish(result);
         }
 
     }

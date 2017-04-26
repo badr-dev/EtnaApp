@@ -13,13 +13,5 @@
     tools:context="com.example.badredinebelhadef.etnaapp.HomeActivity"
     tools:showIn="@layout/app_bar_home">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/UserCompleteName"
-        android:editable="false"
-        android:layout_alignParentTop="true"
-        android:layout_alignParentEnd="true"
-        android:text="Test UserCompleteName"
-        android:textSize="21sp" />
+
 </RelativeLayout>
