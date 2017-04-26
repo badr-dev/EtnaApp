@@ -169,6 +169,7 @@ public class HomeActivity extends AppCompatActivity
 
             } catch (IOException e) {
                 e.printStackTrace();
+                return "Error in doInBackground";
             }
         }
 
