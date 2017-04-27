@@ -51,14 +51,11 @@ public class MyHttp{
                 .build();
 
         try ( Response response = client.newCall(request).execute() ) {
-
             /*System.out.println(" SUCCESS result request Http GET :: " + response.body().string());*/
             return response.body().string();
 
         } catch (IOException e) {
-/*
-            System.out.println(e.toString() + " Error request Http :: Get Method in MyHttp ");
-*/
+/*            System.out.println(e.toString() + " Error request Http :: Get Method in MyHttp "); */
             return " Error request Http :: Get Method in MyHttp ";
         }
     }

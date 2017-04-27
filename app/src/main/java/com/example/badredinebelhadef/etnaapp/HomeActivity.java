@@ -15,8 +15,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.TextView;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
@@ -36,11 +38,9 @@ public class HomeActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, AsyncResponse {
 
 
-
-
-
-
-    protected TextView UserCompleteName;
+    protected ImageView userImageView;
+    protected TextView userCompleteName;
+    protected TextView userEmail;
 
     protected String userBasicInfoUrl = "https://auth.etna-alternance.net/users/";
 
@@ -50,6 +50,7 @@ public class HomeActivity extends AppCompatActivity
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -71,53 +72,50 @@ public class HomeActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-
+        View hView =  navigationView.getHeaderView(0);
+        this.userEmail = (TextView) hView.findViewById(R.id.userEmail);
+        this.userCompleteName = (TextView) hView.findViewById(R.id.userCompleteName);
 
         // repris depuis l'ancien Home
         Intent i = getIntent();
+        String tokenKey     = i.getStringExtra("tokenKey");
+        String tokenValue   = i.getStringExtra("tokenValue");
+        String login        = i.getStringExtra("login");
 
-        String tokenKey = i.getStringExtra("tokenKey");
-        String tokenValue = i.getStringExtra("tokenValue");
-        String login = i.getStringExtra("login");
-
+        System.out.println( "login => " + login);
         System.out.println( "token => " + tokenKey);
         System.out.println( "value => " + tokenValue);
 
-
         this.userBasicInfoUrl += login;
 
-        System.out.println( "Url before call Api => " + userBasicInfoUrl);
-
         HomeGetHttpTask HomeGetHttpTaskObj = new HomeGetHttpTask("https://prepintra-api.etna-alternance.net/users/belhad_b", tokenKey, tokenValue);
-
         HomeGetHttpTaskObj.delegate = (AsyncResponse) this;
-
         HomeGetHttpTaskObj.execute();
-
-
-
-
-
-/*        try {
-            JSONObject jobject = new JSONObject(response);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }*/
     }
 
 
-    //this override the implemented method from asyncTask
+    //this override the implemented method from asyncTask, get data from postOnExecute Here
     @Override
     public void processFinish(String output){
         //Here you will receive the result fired from async class
         //of onPostExecute(result) method.
+        System.out.println( "Result request /users/belhad_b => :: " + output);
 
-        System.out.println( "LES POTES A LA POTE A LA PETER => " + output);
+        JSONObject jsonDataUser = null;
+        try {
+
+            jsonDataUser = new JSONObject(output);
+            String email = jsonDataUser.getString("email");
+            String userCompleteName = jsonDataUser.getString("firstname") + ' ' + jsonDataUser.getString("lastname");
+            System.out.println( "Email email  => :: " + email);
+            this.userEmail.setText(email);
+            this.userCompleteName.setText(userCompleteName);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
     }
-
-
-
-
 
     @Override
     public void onBackPressed() {
