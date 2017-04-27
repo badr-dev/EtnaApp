@@ -1,6 +1,8 @@
 package com.example.badredinebelhadef.etnaapp;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -22,6 +24,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import okhttp3.Request;
 import okhttp3.Response;
@@ -75,6 +80,7 @@ public class HomeActivity extends AppCompatActivity
         View hView =  navigationView.getHeaderView(0);
         this.userEmail = (TextView) hView.findViewById(R.id.userEmail);
         this.userCompleteName = (TextView) hView.findViewById(R.id.userCompleteName);
+        this.userImageView = (ImageView) hView.findViewById(R.id.userImageView);
 
         // repris depuis l'ancien Home
         Intent i = getIntent();
@@ -88,9 +94,13 @@ public class HomeActivity extends AppCompatActivity
 
         this.userBasicInfoUrl += login;
 
-        HomeGetHttpTask HomeGetHttpTaskObj = new HomeGetHttpTask("https://prepintra-api.etna-alternance.net/users/belhad_b", tokenKey, tokenValue);
+        DownloadImageTask DownloadImageTask = new DownloadImageTask(this.userImageView);
+        DownloadImageTask.execute("https://auth.etna-alternance.net/api/users/belhad_b/photo", tokenKey, tokenValue);
+
+        HomeGetHttpTask HomeGetHttpTaskObj = new HomeGetHttpTask();
         HomeGetHttpTaskObj.delegate = (AsyncResponse) this;
-        HomeGetHttpTaskObj.execute();
+        HomeGetHttpTaskObj.execute("https://prepintra-api.etna-alternance.net/users/belhad_b", tokenKey, tokenValue);
+
     }
 
 
@@ -114,7 +124,6 @@ public class HomeActivity extends AppCompatActivity
         } catch (JSONException e) {
             e.printStackTrace();
         }
-
     }
 
     @Override
@@ -177,40 +186,66 @@ public class HomeActivity extends AppCompatActivity
 
 
     // Execution in background
-    public class HomeGetHttpTask extends AsyncTask<Void, Void, String> {
-
-        protected String url = "";
-        protected String tokenKey = "";
-        protected String tokenValue = "";
+    public class HomeGetHttpTask extends AsyncTask<String, Void, String> {
 
         public AsyncResponse delegate = null;
 
-        HomeGetHttpTask(String urlQuery, String tokenKey, String tokenValue) {
-            this.url = urlQuery;
-            this.tokenKey = tokenKey;
-            this.tokenValue = tokenValue;
-        }
-
         @Override
-        protected String doInBackground(Void... params) {
+        protected String doInBackground(String... params) {
+
+            String url = params[0];
+            String tokenKey = params[1];
+            String tokenValue = params[2];
 
             MyHttp clientHttp = new MyHttp();
 
             String response = null;
             try {
-                response = clientHttp.get(this.url, this.tokenKey, this.tokenValue);
-                return response;
-
+                response = clientHttp.get(url, tokenKey, tokenValue);
             } catch (IOException e) {
                 e.printStackTrace();
-                return "Error in doInBackground";
             }
+            return response;
         }
 
         @Override
         protected void onPostExecute(String result) {
             delegate.processFinish(result);
         }
-
     }
+
+
+    // TEST DOWLOAD IMAGE
+    private class DownloadImageTask extends AsyncTask<String, Void, Bitmap> {
+        ImageView bmImage;
+
+        public DownloadImageTask(ImageView bmImage) {
+            this.bmImage = bmImage;
+        }
+
+        protected Bitmap doInBackground(String... params) {
+
+            Bitmap userImage = null;
+
+            String url = params[0];
+            String tokenKey = params[1];
+            String tokenValue = params[2];
+
+            MyHttp clientHttp = new MyHttp();
+
+            try {
+                userImage = clientHttp.getUserImage(url, tokenKey, tokenValue);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return userImage;
+        }
+
+        protected void onPostExecute(Bitmap userImage) {
+            bmImage.setImageBitmap(userImage);
+        }
+    }
+
+
+
 }
