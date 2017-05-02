@@ -3,6 +3,7 @@ package com.example.badredinebelhadef.etnaapp;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -18,36 +19,55 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 
-import okhttp3.Request;
-import okhttp3.Response;
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.appindexing.Thing;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
 
 
 
 // Interface callbaack
 interface AsyncResponse {
-    void processFinish(String output);
+    void processFinish(String output, String infoQuery);
 }
-
 
 public class HomeActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, AsyncResponse {
 
+    final static String REQUEST_USER_BASIC_INFO = "basic_info";
+    final static String REQUEST_USER_LOG_INTRA = "log_intra";
 
     protected ImageView userImageView;
     protected TextView userCompleteName;
     protected TextView userEmail;
 
+    protected TextView compagnieName;
+    protected ProgressBar progressBarlog;
+
+    protected TextView startRun;
+    protected TextView endRun;
+
     protected String userBasicInfoUrl = "https://auth.etna-alternance.net/users/";
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    private GoogleApiClient client;
 
 
     @Override
@@ -77,52 +97,98 @@ public class HomeActivity extends AppCompatActivity
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        View hView =  navigationView.getHeaderView(0);
+        View hView = navigationView.getHeaderView(0);
         this.userEmail = (TextView) hView.findViewById(R.id.userEmail);
         this.userCompleteName = (TextView) hView.findViewById(R.id.userCompleteName);
         this.userImageView = (ImageView) hView.findViewById(R.id.userImageView);
 
+        this.compagnieName = (TextView) findViewById(R.id.compagnieName);
+        this.startRun = (TextView) findViewById(R.id.startRun);
+        this.endRun = (TextView) findViewById(R.id.endRun);
+
+        this.progressBarlog = (ProgressBar) findViewById(R.id.progressBarLog);
+
+
         // repris depuis l'ancien Home
         Intent i = getIntent();
-        String tokenKey     = i.getStringExtra("tokenKey");
-        String tokenValue   = i.getStringExtra("tokenValue");
-        String login        = i.getStringExtra("login");
+        String tokenKey = i.getStringExtra("tokenKey");
+        String tokenValue = i.getStringExtra("tokenValue");
+        String login = i.getStringExtra("login");
 
-        System.out.println( "login => " + login);
-        System.out.println( "token => " + tokenKey);
-        System.out.println( "value => " + tokenValue);
+        System.out.println("USER => login :: " + login);
 
         this.userBasicInfoUrl += login;
 
         DownloadImageTask DownloadImageTask = new DownloadImageTask(this.userImageView);
         DownloadImageTask.execute("https://auth.etna-alternance.net/api/users/belhad_b/photo", tokenKey, tokenValue);
 
-        HomeGetHttpTask HomeGetHttpTaskObj = new HomeGetHttpTask();
-        HomeGetHttpTaskObj.delegate = (AsyncResponse) this;
-        HomeGetHttpTaskObj.execute("https://prepintra-api.etna-alternance.net/users/belhad_b", tokenKey, tokenValue);
+        HomeGetHttpTask HomeGetUserInfo = new HomeGetHttpTask();
+        HomeGetUserInfo.delegate = (AsyncResponse) this;
+        HomeGetUserInfo.execute("https://prepintra-api.etna-alternance.net/users/belhad_b", tokenKey, tokenValue, REQUEST_USER_BASIC_INFO);
 
+        HomeGetHttpTask HomeGetUserLog = new HomeGetHttpTask();
+        HomeGetUserLog.delegate = (AsyncResponse) this;
+        HomeGetUserLog.execute("https://gsa-api.etna-alternance.net/students/belhad_b/logs", tokenKey, tokenValue, REQUEST_USER_LOG_INTRA);
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
 
     //this override the implemented method from asyncTask, get data from postOnExecute Here
     @Override
-    public void processFinish(String output){
+    public void processFinish(String output, String infoQuery) {
         //Here you will receive the result fired from async class
         //of onPostExecute(result) method.
-        System.out.println( "Result request /users/belhad_b => :: " + output);
 
-        JSONObject jsonDataUser = null;
-        try {
+        switch (infoQuery) {
 
-            jsonDataUser = new JSONObject(output);
-            String email = jsonDataUser.getString("email");
-            String userCompleteName = jsonDataUser.getString("firstname") + ' ' + jsonDataUser.getString("lastname");
-            System.out.println( "Email email  => :: " + email);
-            this.userEmail.setText(email);
-            this.userCompleteName.setText(userCompleteName);
+            case REQUEST_USER_BASIC_INFO:
+                JSONObject jsonDataUser = null;
+                try {
+                    jsonDataUser = new JSONObject(output);
+                    this.userEmail.setText(jsonDataUser.getString("email"));
+                    this.userCompleteName.setText(jsonDataUser.getString("firstname") + ' ' + jsonDataUser.getString("lastname"));
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+                break;
 
-        } catch (JSONException e) {
-            e.printStackTrace();
+            case REQUEST_USER_LOG_INTRA:
+
+                Gson gson = new Gson();
+                DataUserLogs dataUserLogs = gson.fromJson(output, DataUserLogs.class);
+
+                this.compagnieName.setText(dataUserLogs.getContracts().get(0).getCompanyName());
+
+                try {
+                    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+                    Date dateStart = formatter.parse(dataUserLogs.getContracts().get(0).getPeriods().get(0).getStart());
+                    Date dateEnd = formatter.parse(dataUserLogs.getContracts().get(0).getPeriods().get(0).getEnd());
+
+                    String[] dateStartStr = dateStart.toString().split(" ");
+                    String[] dateEndStr = dateEnd.toString().split(" ");
+
+                    this.startRun.setText(dateStartStr[2] + " " + dateStartStr[1]);
+                    this.endRun.setText(dateEndStr[2] + " " + dateEndStr[1]);
+
+                } catch (ParseException e) {
+                    e.printStackTrace();
+                }
+
+                Integer log = dataUserLogs.getContracts().get(0).getPeriods().get(0).getLog();
+                Integer log_minutes = dataUserLogs.getContracts().get(0).getPeriods().get(0).getLogMinutes();
+                Integer resultFait = ( 100 * ((log * 60) + log_minutes) ) / 1980;
+
+                this.progressBarlog.setProgress(resultFait);
+
+
+                break;
+
+            default:
+                // Do Nothing
+                break;
         }
     }
 
@@ -184,11 +250,48 @@ public class HomeActivity extends AppCompatActivity
         return true;
     }
 
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+    public Action getIndexApiAction() {
+        Thing object = new Thing.Builder()
+                .setName("Home Page") // TODO: Define a title for the content shown.
+                // TODO: Make sure this auto-generated URL is correct.
+                .setUrl(Uri.parse("http://[ENTER-YOUR-URL-HERE]"))
+                .build();
+        return new Action.Builder(Action.TYPE_VIEW)
+                .setObject(object)
+                .setActionStatus(Action.STATUS_TYPE_COMPLETED)
+                .build();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        client.connect();
+        AppIndex.AppIndexApi.start(client, getIndexApiAction());
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        // ATTENTION: This was auto-generated to implement the App Indexing API.
+        // See https://g.co/AppIndexing/AndroidStudio for more information.
+        AppIndex.AppIndexApi.end(client, getIndexApiAction());
+        client.disconnect();
+    }
+
 
     // Execution in background
     public class HomeGetHttpTask extends AsyncTask<String, Void, String> {
 
         public AsyncResponse delegate = null;
+        public String queryInfo = null;
 
         @Override
         protected String doInBackground(String... params) {
@@ -196,9 +299,10 @@ public class HomeActivity extends AppCompatActivity
             String url = params[0];
             String tokenKey = params[1];
             String tokenValue = params[2];
+            // Preciser dans quel requette on est pour traiter en fonction de ce qu'on recoit
+            this.queryInfo = params[3];
 
             MyHttp clientHttp = new MyHttp();
-
             String response = null;
             try {
                 response = clientHttp.get(url, tokenKey, tokenValue);
@@ -210,7 +314,7 @@ public class HomeActivity extends AppCompatActivity
 
         @Override
         protected void onPostExecute(String result) {
-            delegate.processFinish(result);
+            delegate.processFinish(result, this.queryInfo);
         }
     }
 
@@ -245,7 +349,6 @@ public class HomeActivity extends AppCompatActivity
             bmImage.setImageBitmap(userImage);
         }
     }
-
 
 
 }

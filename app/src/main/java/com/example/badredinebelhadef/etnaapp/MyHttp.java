@@ -80,4 +80,6 @@ public class MyHttp{
         return bitmap;
     }
 
+
+
 }
