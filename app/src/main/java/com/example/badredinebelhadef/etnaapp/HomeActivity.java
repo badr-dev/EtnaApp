@@ -3,11 +3,14 @@ package com.example.badredinebelhadef.etnaapp;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.text.SpannableString;
+import android.text.style.StyleSpan;
 import android.util.Log;
 import android.view.View;
 import android.support.design.widget.NavigationView;
@@ -30,6 +33,8 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
@@ -58,7 +63,7 @@ public class HomeActivity extends AppCompatActivity
 
     protected TextView compagnieName;
     protected ProgressBar progressBarlog;
-
+    protected TextView infoDayLog;
     protected TextView startRun;
     protected TextView endRun;
 
@@ -102,7 +107,9 @@ public class HomeActivity extends AppCompatActivity
         this.userCompleteName = (TextView) hView.findViewById(R.id.userCompleteName);
         this.userImageView = (ImageView) hView.findViewById(R.id.userImageView);
 
+
         this.compagnieName = (TextView) findViewById(R.id.compagnieName);
+        this.infoDayLog = (TextView) findViewById(R.id.infoDayLog);
         this.startRun = (TextView) findViewById(R.id.startRun);
         this.endRun = (TextView) findViewById(R.id.endRun);
 
@@ -160,30 +167,88 @@ public class HomeActivity extends AppCompatActivity
                 Gson gson = new Gson();
                 DataUserLogs dataUserLogs = gson.fromJson(output, DataUserLogs.class);
 
-                this.compagnieName.setText(dataUserLogs.getContracts().get(0).getCompanyName());
+                // Show compagnie name if user has contract
+                if (dataUserLogs.getContracts().get(0).getCompanyName() != null) {
+                    this.compagnieName.setText(dataUserLogs.getContracts().get(0).getCompanyName());
+                } else {
+                    this.compagnieName.setText("Vous n'avez pas de contrat en cours.");
+                }
 
+                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
                 try {
-                    SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
                     Date dateStart = formatter.parse(dataUserLogs.getContracts().get(0).getPeriods().get(0).getStart());
                     Date dateEnd = formatter.parse(dataUserLogs.getContracts().get(0).getPeriods().get(0).getEnd());
 
                     String[] dateStartStr = dateStart.toString().split(" ");
                     String[] dateEndStr = dateEnd.toString().split(" ");
-
+                    // Show Start and end of current Run
                     this.startRun.setText(dateStartStr[2] + " " + dateStartStr[1]);
                     this.endRun.setText(dateEndStr[2] + " " + dateEndStr[1]);
+
+                    Integer log = dataUserLogs.getContracts().get(0).getPeriods().get(0).getLog();
+                    Integer log_minutes = dataUserLogs.getContracts().get(0).getPeriods().get(0).getLogMinutes();
+                    Integer resultFait = ( 100 * ((log * 60) + log_minutes) ) / 1980;
+                    // set progression in progressBar
+                    this.progressBarlog.setProgress(resultFait);
 
                 } catch (ParseException e) {
                     e.printStackTrace();
                 }
+                // Get list of shedules for time of log connexion
+                int sizeListShedules = dataUserLogs.getContracts().get(0).getSchedules().size();
+                if ( sizeListShedules > 0 ) {
 
-                Integer log = dataUserLogs.getContracts().get(0).getPeriods().get(0).getLog();
-                Integer log_minutes = dataUserLogs.getContracts().get(0).getPeriods().get(0).getLogMinutes();
-                Integer resultFait = ( 100 * ((log * 60) + log_minutes) ) / 1980;
+                    this.infoDayLog.append("Aujourd'hui votre temps de travail est pris en compte de : \n\n");
 
-                this.progressBarlog.setProgress(resultFait);
+                    Date DateDayNow =  new Date();
+                    SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd");
+                    SimpleDateFormat hourMinFmt = new SimpleDateFormat("hh:mm");
 
+                    boolean hasConnectionToday = false;
 
+                    int i = 0;
+                    while (i < sizeListShedules) {
+
+                        Date checkIsToday = null;
+                        try {
+                            checkIsToday = fmt.parse(dataUserLogs.getContracts().get(0).getSchedules().get(i).getStart());
+
+                            if (fmt.format(DateDayNow).equals(fmt.format(checkIsToday)))  {
+
+                                Date startLog = null;
+                                Date endLog = null;
+
+                                try {
+                                    startLog = formatter.parse(dataUserLogs.getContracts().get(0).getSchedules().get(i).getStart());
+                                    endLog   = formatter.parse(dataUserLogs.getContracts().get(0).getSchedules().get(i).getEnd());
+
+                                    SpannableString strSlog =  new SpannableString(hourMinFmt.format(startLog));
+                                    SpannableString strElog =  new SpannableString(hourMinFmt.format(endLog));
+                                    strSlog.setSpan(new StyleSpan(Typeface.BOLD), 0, strSlog.length(), 0);
+                                    strElog.setSpan(new StyleSpan(Typeface.BOLD), 0, strElog.length(), 0);
+
+                                    this.infoDayLog.append(" - ");
+                                    this.infoDayLog.append(strSlog);
+                                    this.infoDayLog.append(" à " );
+                                    this.infoDayLog.append(strElog);
+                                    this.infoDayLog.append("\n");
+
+                                    hasConnectionToday = true;
+
+                                } catch (ParseException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        } catch (ParseException e) {
+                            e.printStackTrace();
+                        }
+                        ++i;
+                    }
+                    // If time log connexion not found today
+                    if (!hasConnectionToday) {
+                        this.infoDayLog.append("Vous n'avez pas de temps de log à faire aujourd'hui  : \n\n");
+                    }
+                }
                 break;
 
             default:
@@ -231,15 +296,15 @@ public class HomeActivity extends AppCompatActivity
         int id = item.getItemId();
 
         if (id == R.id.nav_camera) {
+
             // Handle the camera action
         } else if (id == R.id.nav_gallery) {
             System.out.println("button : nav_gallery");
         } else if (id == R.id.nav_slideshow) {
             System.out.println("button : nav_slideshow");
         } else if (id == R.id.nav_manage) {
-            System.out.println("button : nav_manage");
+            System.out.println("button : nav_manage"); // appel de la methode en lui passant le token et la value
         } else if (id == R.id.nav_share) {
-
             System.out.println("button : nav_share");
         } else if (id == R.id.nav_send) {
             System.out.println("button : nav_send");
