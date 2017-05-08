@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="10dp" >
+
+    <TextView android:id="@+id/module_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@android:color/black"
+        android:layout_marginLeft="42dp"
+        android:layout_alignTop="@+id/avatar"
+        android:textStyle="bold"
+        tools:text="Nom du Module"
+        android:textSize="18sp"
+        android:layout_alignParentStart="true" />
+
+    <TextView
+        android:id="@+id/project_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="?android:attr/colorPrimaryDark"
+        tools:text="Nom du projet"
+        android:layout_below="@+id/module_name"
+        android:layout_marginTop="28dp"
+        android:textSize="15sp"
+        android:textStyle="normal|bold"
+        android:layout_alignParentStart="true" />
+
+    <TextView android:id="@+id/project_dead_line"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        tools:text="Date de fin le 12 Mais 2017 a 23:42"
+        android:layout_alignBaseline="@+id/project_name"
+        android:layout_alignBottom="@+id/project_name"
+        android:layout_alignParentEnd="true"
+        android:layout_marginLeft="20dp"
+        android:fontFamily="sans-serif"
+        android:textColor="@color/common_google_signin_btn_text_light_focused"
+        android:textStyle="normal|italic"
+        android:textAlignment="center" />
+
+    <View android:id="@+id/hrView"
+        android:layout_height="1dp"
+        android:background="#337ab7"
+        android:layout_marginTop="12dp"
+        android:layout_width="wrap_content"
+        android:layout_below="@+id/module_name"
+        android:layout_alignParentStart="true"
+        android:layout_alignEnd="@+id/module_name" />
+
+
+</RelativeLayout>

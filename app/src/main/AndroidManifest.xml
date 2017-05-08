@@ -7,7 +7,8 @@
     <uses-permission android:name="android.permission.READ_PROFILE" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- Pour pourvoir utiliser le net -->
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
@@ -18,18 +19,30 @@
         <activity
             android:name=".LoginActivity"
             android:label="@string/title_activity_login">
-            <!-- Il te manquait cette ligne ci-dessous, ton erreur disait qu'il ne trouvait pas l'activité par défaut autrement dit
-            l'activité qu'il va lancer en premier au démarrage -->
+
+            <!--
+            Il te manquait cette ligne ci-dessous, ton erreur disait qu'il ne trouvait pas l'activité par défaut autrement dit
+            l'activité qu'il va lancer en premier au démarrage
+            -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <!--
+     ATTENTION: This was auto-generated to add Google Play services to your project for
+     App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information.
+        -->
 
-        </activity><!-- ATTENTION: This was auto-generated to add Google Play services to your project for
-     App Indexing.  See https://g.co/AppIndexing/AndroidStudio for more information. -->
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
+
+        <activity
+            android:name=".HomeActivity"
+            android:label="@string/title_activity_home"
+            android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 
 </manifest>
