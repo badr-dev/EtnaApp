@@ -22,19 +22,24 @@ import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
@@ -44,18 +49,18 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 
-
-
 // Interface callbaack
 interface AsyncResponse {
     void processFinish(String output, String infoQuery);
 }
+
 
 public class HomeActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, AsyncResponse {
 
     final static String REQUEST_USER_BASIC_INFO = "basic_info";
     final static String REQUEST_USER_LOG_INTRA = "log_intra";
+    final static String REQUEST_CURRENTACTIVITIES = "currentactivities";
 
     protected ImageView userImageView;
     protected TextView userCompleteName;
@@ -74,12 +79,23 @@ public class HomeActivity extends AppCompatActivity
      */
     private GoogleApiClient client;
 
+    ListView mListView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
+
+        mListView = (ListView) findViewById(R.id.listViewActivites);
+
+
+        // repris depuis l'ancien Home
+        Intent i = getIntent();
+        final String tokenKey = i.getStringExtra("tokenKey");
+        final String tokenValue = i.getStringExtra("tokenValue");
+        final String login = i.getStringExtra("login");
+
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -88,8 +104,20 @@ public class HomeActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                /*Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();*/
+
+                Intent intent = new Intent(Intent.ACTION_SENDTO);
+                intent.setType("text/plain");
+                intent.putExtra(Intent.EXTRA_SUBJECT, "Retard de " + login);
+                intent.putExtra(Intent.EXTRA_TEXT, "Bonjour,\n\n" +
+                        "Je suis désolé je vais avoir un peu de retard ce matin,\n\n" +
+                        "Cordialement,  ceci est un test EtnApp\n\n" +
+                        login);
+                intent.setData(Uri.parse("mailto:etna-pedago@etna-alternance.net"));
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+
             }
         });
 
@@ -107,23 +135,14 @@ public class HomeActivity extends AppCompatActivity
         this.userCompleteName = (TextView) hView.findViewById(R.id.userCompleteName);
         this.userImageView = (ImageView) hView.findViewById(R.id.userImageView);
 
-
         this.compagnieName = (TextView) findViewById(R.id.compagnieName);
         this.infoDayLog = (TextView) findViewById(R.id.infoDayLog);
         this.startRun = (TextView) findViewById(R.id.startRun);
         this.endRun = (TextView) findViewById(R.id.endRun);
-
         this.progressBarlog = (ProgressBar) findViewById(R.id.progressBarLog);
 
 
-        // repris depuis l'ancien Home
-        Intent i = getIntent();
-        String tokenKey = i.getStringExtra("tokenKey");
-        String tokenValue = i.getStringExtra("tokenValue");
-        String login = i.getStringExtra("login");
-
         System.out.println("USER => login :: " + login);
-
         this.userBasicInfoUrl += login;
 
         DownloadImageTask DownloadImageTask = new DownloadImageTask(this.userImageView);
@@ -137,17 +156,30 @@ public class HomeActivity extends AppCompatActivity
         HomeGetUserLog.delegate = (AsyncResponse) this;
         HomeGetUserLog.execute("https://gsa-api.etna-alternance.net/students/belhad_b/logs", tokenKey, tokenValue, REQUEST_USER_LOG_INTRA);
 
+        HomeGetHttpTask HomeGetCurrentactivities = new HomeGetHttpTask();
+        HomeGetCurrentactivities.delegate = (AsyncResponse) this;
+        HomeGetCurrentactivities.execute("https://modules-api.etna-alternance.net/students/belhad_b/currentactivities", tokenKey, tokenValue, REQUEST_CURRENTACTIVITIES);
+
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
     }
 
 
-    //this override the implemented method from asyncTask, get data from postOnExecute Here
+    // @TODO Methode executer dans un autre process donc a revoir ... @badr
     @Override
     public void processFinish(String output, String infoQuery) {
         //Here you will receive the result fired from async class
         //of onPostExecute(result) method.
+
+        Gson gson = null;
+
+        Date DateDayNow =  new Date();
+
+        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss", Locale.FRANCE);
+        SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd");
+        SimpleDateFormat fmtFr = new SimpleDateFormat("EEEE dd MMM yyyy", Locale.FRANCE);
+        SimpleDateFormat hourMinFmt = new SimpleDateFormat("hh:mm", Locale.FRANCE);
 
         switch (infoQuery) {
 
@@ -164,7 +196,7 @@ public class HomeActivity extends AppCompatActivity
 
             case REQUEST_USER_LOG_INTRA:
 
-                Gson gson = new Gson();
+                gson = new Gson();
                 DataUserLogs dataUserLogs = gson.fromJson(output, DataUserLogs.class);
 
                 // Show compagnie name if user has contract
@@ -174,7 +206,6 @@ public class HomeActivity extends AppCompatActivity
                     this.compagnieName.setText("Vous n'avez pas de contrat en cours.");
                 }
 
-                SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
                 try {
                     Date dateStart = formatter.parse(dataUserLogs.getContracts().get(0).getPeriods().get(0).getStart());
                     Date dateEnd = formatter.parse(dataUserLogs.getContracts().get(0).getPeriods().get(0).getEnd());
@@ -198,12 +229,6 @@ public class HomeActivity extends AppCompatActivity
                 int sizeListShedules = dataUserLogs.getContracts().get(0).getSchedules().size();
                 if ( sizeListShedules > 0 ) {
 
-                    this.infoDayLog.append("Aujourd'hui votre temps de travail est pris en compte de : \n\n");
-
-                    Date DateDayNow =  new Date();
-                    SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd");
-                    SimpleDateFormat hourMinFmt = new SimpleDateFormat("hh:mm");
-
                     boolean hasConnectionToday = false;
 
                     int i = 0;
@@ -212,7 +237,7 @@ public class HomeActivity extends AppCompatActivity
                         Date checkIsToday = null;
                         try {
                             checkIsToday = fmt.parse(dataUserLogs.getContracts().get(0).getSchedules().get(i).getStart());
-
+                            // On check si on du temps de logs aujourd'hui avec la date du jour
                             if (fmt.format(DateDayNow).equals(fmt.format(checkIsToday)))  {
 
                                 Date startLog = null;
@@ -227,6 +252,9 @@ public class HomeActivity extends AppCompatActivity
                                     strSlog.setSpan(new StyleSpan(Typeface.BOLD), 0, strSlog.length(), 0);
                                     strElog.setSpan(new StyleSpan(Typeface.BOLD), 0, strElog.length(), 0);
 
+                                    if (i == 0 ) {
+                                        this.infoDayLog.append("Aujourd'hui votre temps de travail est pris en compte de : \n\n");
+                                    }
                                     this.infoDayLog.append(" - ");
                                     this.infoDayLog.append(strSlog);
                                     this.infoDayLog.append(" à " );
@@ -246,10 +274,83 @@ public class HomeActivity extends AppCompatActivity
                     }
                     // If time log connexion not found today
                     if (!hasConnectionToday) {
-                        this.infoDayLog.append("Vous n'avez pas de temps de log à faire aujourd'hui  : \n\n");
+                        this.infoDayLog.append("Vous n'avez pas de temps de log à faire aujourd'hui \n\n");
                     }
                 }
                 break;
+
+            case REQUEST_CURRENTACTIVITIES:
+
+                JSONObject jsonObjectData = null;
+
+                try {
+                    jsonObjectData = new JSONObject(output);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+
+                String strModule   = "test";
+                String strProject  = "toto";
+                String strDeadLine = "titi";
+                String strDL = null;
+
+                JSONArray modules = jsonObjectData.names();
+                // Si on a bien des modules encours ...
+                if ( modules.length() > 0 ) {
+
+                    List<Activite> activites = new ArrayList<Activite>();
+
+                    Date deadLine = null;
+
+                    int i;
+                    for (i = 0; i < modules.length(); ++i) {
+                        try {
+                            JSONObject newJSON;
+                            newJSON = jsonObjectData.getJSONObject(modules.get(i).toString());
+
+                            strModule = modules.get(i).toString();
+
+                            gson = new Gson();
+                            DataJsonProject dataJsonProject = gson.fromJson(newJSON.toString(), DataJsonProject.class);
+
+                            if (dataJsonProject.getProject().size() > 0) {
+                                strProject = dataJsonProject.getProject().get(0).getName();
+                                strDeadLine = dataJsonProject.getProject().get(0).getDateEnd();
+                            }
+                            else if (dataJsonProject.getQuest().size() > 0) {
+                                strProject = dataJsonProject.getQuest().get(0).getName();
+                                strDeadLine = dataJsonProject.getQuest().get(0).getDateEnd();
+                            }
+                            else {
+                                // @TODO Sinon c'est un cours on ne les affiches pas pour le moment @badr
+                                continue;
+                            }
+
+                            try {
+                                deadLine = formatter.parse(strDeadLine);
+
+                                String hourDL = fmtFr.format(deadLine);
+                                String minSecDL = hourMinFmt.format(deadLine);
+
+                                strDL = "fin le " + hourDL + " à " + minSecDL;
+
+                            } catch (ParseException e) {
+                                e.printStackTrace();
+                            }
+
+                            activites.add(new Activite(strModule, strProject, strDL));
+
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    ActiviteAdaptater adapter = new ActiviteAdaptater(HomeActivity.this, activites);
+                    mListView.setAdapter(adapter);
+
+                }
+
+            break;
 
             default:
                 // Do Nothing

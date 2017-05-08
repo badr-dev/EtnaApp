@@ -25,7 +25,8 @@
         android:background="#bce8f1"
         android:textAlignment="textStart"
         android:layout_alignEnd="@+id/progressBarLog"
-        android:layout_alignStart="@+id/progressBarLog" />
+        android:layout_alignStart="@+id/progressBarLog"
+        android:layout_marginTop="20dp" />
 
     <TextView
         android:layout_width="match_parent"
@@ -96,5 +97,38 @@
         android:textColor="@color/common_google_signin_btn_text_dark_focused"
         android:layout_below="@+id/infoDayLog"
         android:layout_alignParentStart="true" />
+
+    <View
+        android:id="@+id/bar_separation"
+        android:layout_width="fill_parent"
+        android:layout_height="5dp"
+        android:background="#337ab7"
+        android:layout_marginTop="51dp"
+        android:layout_below="@+id/progressBarLog"
+        android:layout_centerHorizontal="true" />
+
+
+    <TextView
+        android:id="@+id/text_activites"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textStyle="normal|bold"
+        android:text="Activités en cours"
+        android:textSize="25sp"
+        android:layout_marginLeft="20dp"
+        android:textColor="@color/colorPrimary"
+        android:layout_below="@+id/bar_separation"
+        android:layout_alignParentStart="true"
+        android:layout_marginTop="42dp"
+        android:layout_marginBottom="33dp"
+        android:elevation="12dp" />
+
+    <ListView
+        android:id="@+id/listViewActivites"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/text_activites"/>
+
+
 
 </RelativeLayout>
